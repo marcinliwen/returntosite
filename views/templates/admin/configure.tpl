@@ -24,25 +24,12 @@
 *}
 
 <div class="panel">
-	<h3><i class="icon icon-credit-card"></i> {l s='returntosite' mod='returntosite'}</h3>
+	<h3><i class="icon icon-credit-card"></i> {l s='Return to site' mod='returntosite'}</h3>
 	<p>
-		<strong>{l s='Here is my new generic module!' mod='returntosite'}</strong><br />
-		{l s='Thanks to PrestaShop, now I have a great module.' mod='returntosite'}<br />
-		{l s='I can configure it using the following configuration form.' mod='returntosite'}
+		<strong>{l s='Ustaw exitpopup na stronie kategorii lub dowolnym produkcie!' mod='returntosite'}</strong><br />
 	</p>
-	<br />
 	<p>
-		{l s='This module will boost your sales!' mod='returntosite'}
+		{l s='Zaplanuj kiedy ma się pojawiać i zwiększ sprzedaz' mod='returntosite'}
 	</p>
 </div>
 
-<div class="panel">
-	<h3><i class="icon icon-tags"></i> {l s='Documentation' mod='returntosite'}</h3>
-	<p>
-		&raquo; {l s='You can get a PDF documentation to configure this module' mod='returntosite'} :
-		<ul>
-			<li><a href="#" target="_blank">{l s='English' mod='returntosite'}</a></li>
-			<li><a href="#" target="_blank">{l s='French' mod='returntosite'}</a></li>
-		</ul>
-	</p>
-</div>

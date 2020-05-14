@@ -97,7 +97,18 @@ class Returntosite extends Module
 
         return $output.$this->renderForm();
     }
+    public function setMedia($isNewTheme = false)
+    {
+        parent::setMedia($isNewTheme);
 
+        $this->addJqueryUI('ui.datepicker');
+        $this->addJS(_PS_JS_DIR_ . 'vendor/d3.v3.min.js');
+        
+
+        if ($this->access('edit') && $this->display == 'view') {
+            $this->addJqueryPlugin('autocomplete');
+        }
+    }
     /**
      * Create the form that will be displayed in the configuration of your module.
      */
@@ -132,6 +143,16 @@ class Returntosite extends Module
      */
     protected function getConfigForm()
     {
+        
+        $products = Product::getProducts(1, 0, 0, 'id_product', 'ASC', false, true);
+      
+        foreach($products as $product){
+            $query['id'] = $product['id_product'];
+            $query['name'] = $product['name'];
+            $product_query[] = $query;
+            $query = [];
+        }
+       
         return array(
             'tinymce' => true,
             'form' => array(
@@ -142,10 +163,10 @@ class Returntosite extends Module
                 'input' => array(
                     array(
                         'type' => 'switch',
-                        'label' => $this->l('Live mode'),
-                        'name' => 'RETURNTOSITE_LIVE_MODE',
+                        'label' => $this->l('Aktywny:'),
+                        'name' => 'active_exitpopup',
                         'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode'),
+                        'desc' => $this->l('Włącz/wyłącz exitpopup'),
                         'values' => array(
                             array(
                                 'id' => 'active_on',
@@ -160,25 +181,58 @@ class Returntosite extends Module
                         ),
                     ),
                     array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'desc' => $this->l('Enter a valid email address'),
-                        'name' => 'RETURNTOSITE_ACCOUNT_EMAIL',
-                        'label' => $this->l('Email'),
+                        'type' => 'date',
+                        'label' => $this->l('Aktywny od:'),
+                        'name' => 'active_from',
+                        'autoload_rte' => true,
+                        'desc' => $this->l('Wybierz datę, od której popup będzie widoczny na stronie.'),
                     ),
                     array(
-                        'type' => 'password',
-                        'name' => 'RETURNTOSITE_ACCOUNT_PASSWORD',
-                        'label' => $this->l('Password'),
+                        'type' => 'date',
+                        'label' => $this->l('Aktywny do:'),
+                        'name' => 'active_to',
+                        'autoload_rte' => true,
+                        'desc' => $this->l('Wybierz datę, do której popup będzie widoczny na stronie.'),
+                    ),
+                    array(
+                        'type'  => 'categories',
+                        'label' => $this->l('Kategoria:'),
+                        'desc'    => $this->l('Wybierz kategorię, na której pojawi się popup'),  
+                        'name'  => 'category',
+                        'tree'  => array(
+                             'id' => 'category',
+                             'selected_categories' => array((int)Configuration::get('category')),
+                             'use_checkbox' => true,
+                         )
+                     ),
+                    array(
+                        'type' => 'select',
+                        'cols' => 20,
+                        'multiple' => true,
+                        'label' => $this->l('Produkt:'),
+                        'name' => 'selected_products[]',
+                        'class' => 'fixed-width-xxl',
+                        'options' => array(
+                            'query' => $product_query,
+                            'id' => 'id',
+                            'name' => 'name'
+                        ),
+                        'desc' => $this->l('Wybierz produkty z listy.'),
                     ),
                     array(
                         'type' => 'textarea',
-                        'label' => $this->trans('Treść', array(), 'Admin.Global'),
+                        'label' => $this->l('Treść:'),
                         'name' => 'description',
                         'autoload_rte' => true,
                         'lang' => true,
-                        'hint' => $this->trans('Invalid characters:', array(), 'Admin.Notifications.Info').' <>;=#{}'
+                        'hint' => $this->l('Invalid characters:').' <>;=#{}',
+                        'desc' => $this->l('Wprowadź treść i powiadom klientów, dla czego powinni pozostać na stronie/ dokończyć zakupy.'),
+                    ),
+                    array(
+                        'type' => 'color',
+                        'label' => $this->l('Kolor:'),
+                        'name' => 'color',
+                        'desc' => $this->l('Ustaw główny kolor tła.') . '( "lightblue", "#CC6600")',
                     ),
                 ),
                 'submit' => array(
