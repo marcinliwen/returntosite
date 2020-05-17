@@ -25,3 +25,40 @@
 * Don't forget to prefix your containers with your own identifier
 * to avoid any conflicts with others containers.
 */
+
+.exitpopup .modal-content{
+  border-width: 4px;
+}
+.exitpopup .text-center{
+  text-align:center;
+}
+
+.exitpopup .fa-hand-paper{
+  font-size:56px;
+}
+.exitpopup .btn-primary{
+  border-radius: 5px;
+  transition-duration: 0.3s;
+  transform: translateX(0px)
+}
+.exitpopup .btn-primary:hover i {
+    transform: translateX(10px);
+    transition-duration: 0.3s;
+}
+.exitpopup .btn-primary:hover {
+  box-shadow: 2px 2px 4px 4px rgba(0,0,0,.2);
+  transition-duration: 0.3s;
+}
+.exitpopup .close{
+  position: absolute;
+  opacity: 1;
+  text-shadow: none;
+  right: -18px;
+  top: -18px;
+}
+.exitpopup .close i{
+  color: #fff;
+  background: #333;
+  border-radius: 50%;
+  box-shadow: 0 0 6px 2px rgba(0, 0, 0, .29);
+}

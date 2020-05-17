@@ -60,6 +60,8 @@ class Returntosite extends Module
     public function install()
     {
         Configuration::updateValue('RETURNTOSITE_LIVE_MODE', false);
+        Configuration::updateValue('EP_DESCRIPTION', '<p>przykładowa treść</p>', true);
+        Configuration::updateValue('EP_COLOR', '#ff3f64');
 
         include(dirname(__FILE__).'/sql/install.php');
 
@@ -73,6 +75,9 @@ class Returntosite extends Module
     public function uninstall()
     {
         Configuration::deleteByName('RETURNTOSITE_LIVE_MODE');
+        Configuration::deleteByName('EP_DESCRIPTION');
+        Configuration::deleteByName('EP_COLOR');
+
 
         include(dirname(__FILE__).'/sql/uninstall.php');
 
@@ -97,12 +102,15 @@ class Returntosite extends Module
 
         return $output.$this->renderForm();
     }
+   
+   
     public function setMedia($isNewTheme = false)
     {
         parent::setMedia($isNewTheme);
 
         $this->addJqueryUI('ui.datepicker');
         $this->addJS(_PS_JS_DIR_ . 'vendor/d3.v3.min.js');
+    
         
 
         if ($this->access('edit') && $this->display == 'view') {
@@ -134,7 +142,8 @@ class Returntosite extends Module
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
         );
-
+       // $helper->fields_value =  $this->getConfigFormValues();
+    
         return $helper->generateForm(array($this->getConfigForm()));
     }
 
@@ -162,9 +171,64 @@ class Returntosite extends Module
                 ),
                 'input' => array(
                     array(
+                        'type' => 'textarea',
+                        'label' => $this->l('Treść:'),
+                        'name' => 'EP_DESCRIPTION',
+                        'cols' => 40,
+                        'rows' => 10,
+                        'class' => 'rte',
+                        'autoload_rte' => true,
+                        'hint' => $this->l('Invalid characters:').' <>;=#{}',
+                        'desc' => $this->l('Wprowadź treść i powiadom klientów, dla czego powinni pozostać na stronie/ dokończyć zakupy.')
+                    ),
+                    array(
+                        'type' => 'color',
+                        'label' => $this->l('Kolor:'),
+                        'name' => 'EP_COLOR',
+                        'desc' => $this->l('Ustaw główny kolor tła.') . '( "lightblue", "#CC6600")',
+                    ),
+                    array(
+                        'type' => 'date',
+                        'label' => $this->l('Aktywny od:'),
+                        'name' => 'EP_ACTIVE_FROM',
+                        'autoload_rte' => true,
+                        'desc' => $this->l('Wybierz datę, od której popup będzie widoczny na stronie.'),
+                    ),
+                    array(
+                        'type' => 'date',
+                        'label' => $this->l('Aktywny do:'),
+                        'name' => 'EP_ACTIVE_TO',
+                        'autoload_rte' => true,
+                        'desc' => $this->l('Wybierz datę, do której popup będzie widoczny na stronie.'),
+                    ),
+                    array(
+                        'type'  => 'categories',
+                        'label' => $this->l('Kategoria:'),
+                        'desc'    => $this->l('Wybierz kategorię, na której pojawi się popup'),  
+                        'name'  => 'EP_CATEGORY[]',
+                        'tree'  => array(
+                             'id' => 'EP_CATEGORY',
+                             'selected_categories' => array((int)Configuration::get('EP_CATEGORY')),
+                         )
+                     ),
+                    array(
+                        'type' => 'select',
+                        'cols' => 20,
+                        'label' => $this->l('Produkt:'),
+                        'name' => 'EP_SELECTED_PRODUCT',
+                        'class' => 'fixed-width-xxl',
+                        'options' => array(
+                            'query' => $product_query,
+                            'id' => 'id',
+                            'name' => 'name',
+                        ),
+                        'desc' => $this->l('Wybierz produkty z listy.'),
+                    ),
+                    
+                    array(
                         'type' => 'switch',
                         'label' => $this->l('Aktywny:'),
-                        'name' => 'active_exitpopup',
+                        'name' => 'EP_ACTIVE',
                         'is_bool' => true,
                         'desc' => $this->l('Włącz/wyłącz exitpopup'),
                         'values' => array(
@@ -180,60 +244,6 @@ class Returntosite extends Module
                             )
                         ),
                     ),
-                    array(
-                        'type' => 'date',
-                        'label' => $this->l('Aktywny od:'),
-                        'name' => 'active_from',
-                        'autoload_rte' => true,
-                        'desc' => $this->l('Wybierz datę, od której popup będzie widoczny na stronie.'),
-                    ),
-                    array(
-                        'type' => 'date',
-                        'label' => $this->l('Aktywny do:'),
-                        'name' => 'active_to',
-                        'autoload_rte' => true,
-                        'desc' => $this->l('Wybierz datę, do której popup będzie widoczny na stronie.'),
-                    ),
-                    array(
-                        'type'  => 'categories',
-                        'label' => $this->l('Kategoria:'),
-                        'desc'    => $this->l('Wybierz kategorię, na której pojawi się popup'),  
-                        'name'  => 'category',
-                        'tree'  => array(
-                             'id' => 'category',
-                             'selected_categories' => array((int)Configuration::get('category')),
-                             'use_checkbox' => true,
-                         )
-                     ),
-                    array(
-                        'type' => 'select',
-                        'cols' => 20,
-                        'multiple' => true,
-                        'label' => $this->l('Produkt:'),
-                        'name' => 'selected_products[]',
-                        'class' => 'fixed-width-xxl',
-                        'options' => array(
-                            'query' => $product_query,
-                            'id' => 'id',
-                            'name' => 'name'
-                        ),
-                        'desc' => $this->l('Wybierz produkty z listy.'),
-                    ),
-                    array(
-                        'type' => 'textarea',
-                        'label' => $this->l('Treść:'),
-                        'name' => 'description',
-                        'autoload_rte' => true,
-                        'lang' => true,
-                        'hint' => $this->l('Invalid characters:').' <>;=#{}',
-                        'desc' => $this->l('Wprowadź treść i powiadom klientów, dla czego powinni pozostać na stronie/ dokończyć zakupy.'),
-                    ),
-                    array(
-                        'type' => 'color',
-                        'label' => $this->l('Kolor:'),
-                        'name' => 'color',
-                        'desc' => $this->l('Ustaw główny kolor tła.') . '( "lightblue", "#CC6600")',
-                    ),
                 ),
                 'submit' => array(
                     'title' => $this->l('Save'),
@@ -248,9 +258,13 @@ class Returntosite extends Module
     protected function getConfigFormValues()
     {
         return array(
-            'RETURNTOSITE_LIVE_MODE' => Configuration::get('RETURNTOSITE_LIVE_MODE', true),
-            'RETURNTOSITE_ACCOUNT_EMAIL' => Configuration::get('RETURNTOSITE_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-            'RETURNTOSITE_ACCOUNT_PASSWORD' => Configuration::get('RETURNTOSITE_ACCOUNT_PASSWORD', null),
+            'EP_DESCRIPTION'=> Configuration::get('EP_DESCRIPTION'),
+            'EP_COLOR'=> Configuration::get('EP_COLOR'),
+            'EP_ACTIVE_FROM'=> Configuration::get('EP_ACTIVE_FROM'),
+            'EP_ACTIVE_TO' => Configuration::get('EP_ACTIVE_TO'),
+            'EP_CATEGORY'=> Configuration::get('EP_CATEGORY'),
+            'EP_SELECTED_PRODUCTS'=> Configuration::get('EP_SELECTED_PRODUCTS[]'),
+            'EP_ACTIVE'=> Configuration::get('EP_ACTIVE'),
         );
     }
 
@@ -262,7 +276,14 @@ class Returntosite extends Module
         $form_values = $this->getConfigFormValues();
 
         foreach (array_keys($form_values) as $key) {
+           
+          if($key == 'EP_DESCRIPTION'){
+            Configuration::updateValue($key, Tools::getValue($key), true);
+          }else{
             Configuration::updateValue($key, Tools::getValue($key));
+          }
+               
+          
         }
     }
 
@@ -284,6 +305,7 @@ class Returntosite extends Module
     {
         $this->context->controller->addJS($this->_path.'/views/js/front.js');
         $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+        $this->context->controller->addCSS('https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css');
     }
 
     public function hookDisplayFooterProduct()
@@ -293,6 +315,57 @@ class Returntosite extends Module
 
     public function hookDisplayLeftColumn()
     {
+        function getContrastColor($hexColor) 
+        {
+
+                // hexColor RGB
+                $R1 = hexdec(substr($hexColor, 1, 2));
+                $G1 = hexdec(substr($hexColor, 3, 2));
+                $B1 = hexdec(substr($hexColor, 5, 2));
+
+                // Black RGB
+                $blackColor = "#000000";
+                $R2BlackColor = hexdec(substr($blackColor, 1, 2));
+                $G2BlackColor = hexdec(substr($blackColor, 3, 2));
+                $B2BlackColor = hexdec(substr($blackColor, 5, 2));
+
+                // Calc contrast ratio
+                $L1 = 0.2126 * pow($R1 / 255, 2.2) +
+                    0.7152 * pow($G1 / 255, 2.2) +
+                    0.0722 * pow($B1 / 255, 2.2);
+
+                $L2 = 0.2126 * pow($R2BlackColor / 255, 2.2) +
+                    0.7152 * pow($G2BlackColor / 255, 2.2) +
+                    0.0722 * pow($B2BlackColor / 255, 2.2);
+
+                $contrastRatio = 0;
+                if ($L1 > $L2) {
+                    $contrastRatio = (int)(($L1 + 0.05) / ($L2 + 0.05));
+                } else {
+                    $contrastRatio = (int)(($L2 + 0.05) / ($L1 + 0.05));
+                }
+
+                // If contrast is more than 5, return black color
+                if ($contrastRatio > 5) {
+                    return '#000000';
+                } else { 
+                    // if not, return white color.
+                    return '#FFFFFF';
+                }
+        }
+
+        $text_color = getContrastColor(Configuration::get('EP_COLOR'));
+
+        $context = Context::getContext();
+        $context->cookie->__set($exitp_closed,$result);
         /* Place your code here. */
+        $this->smarty->assign([
+            'ep_text' => Configuration::get('EP_DESCRIPTION'),
+            'ep_category_id' => Configuration::get('EP_CATEGORY'),
+            'ep_main_color' =>Configuration::get('EP_COLOR'),
+            'ep_text_color' => $text_color,
+        ]);
+
+        return $this->fetch('module:returntosite/views/templates/hook/exitpopup.tpl');
     }
 }

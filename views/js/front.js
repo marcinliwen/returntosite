@@ -25,3 +25,50 @@
 * Don't forget to prefix your containers with your own identifier
 * to avoid any conflicts with others containers.
 */
+window.addEventListener('load', function () {
+    const is_exit = checkCookie('exitPopup');
+    console.log(is_exit);
+  
+        
+    $(document).mouseleave(function () {
+        console.log('out');
+        let is_exit_s = sessionStorage.getItem('exitPopup');
+        console.log(is_exit_s);
+        if(!is_exit && !is_exit_s){
+            $('#exampleModal').modal('show');
+        }
+    });
+   
+
+    $('.js-close-exit').on('click', function(){
+        setCookie('exitPopup', true, 30);
+        sessionStorage.setItem('exitPopup', true);
+    })
+    
+  
+    function setCookie(cname, cvalue, exdays) {
+        var d = new Date();
+        d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+        var expires = "expires="+d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+      }
+      
+      function getCookie(cname) {
+        var name = cname + "=";
+        var ca = document.cookie.split(';');
+        for(var i = 0; i < ca.length; i++) {
+          var c = ca[i];
+          while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+          }
+          if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+          }
+        }
+        return "";
+      }
+      
+      function checkCookie(name) {
+        return getCookie(name);
+      }
+});
