@@ -28,6 +28,7 @@
 
 .exitpopup .modal-content{
   border-width: 4px;
+  padding: 25px 0;
 }
 .exitpopup .text-center{
   text-align:center;
@@ -39,6 +40,10 @@
 .exitpopup .btn-primary{
   border-radius: 5px;
   transition-duration: 0.3s;
+  margin-top:25px;
+}
+.exitpopup .btn-primary i{
+transition-duration: 0.3s;
   transform: translateX(0px)
 }
 .exitpopup .btn-primary:hover i {

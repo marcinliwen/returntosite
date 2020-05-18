@@ -26,15 +26,10 @@
 * to avoid any conflicts with others containers.
 */
 window.addEventListener('load', function () {
-    const is_exit = checkCookie('exitPopup');
-    console.log(is_exit);
-  
-        
+    var is_exit = checkCookie('exitPopup');
+    
     $(document).mouseleave(function () {
-        console.log('out');
-        let is_exit_s = sessionStorage.getItem('exitPopup');
-        console.log(is_exit_s);
-        if(!is_exit && !is_exit_s){
+        if(!is_exit ){
             $('#exampleModal').modal('show');
         }
     });
@@ -42,7 +37,9 @@ window.addEventListener('load', function () {
 
     $('.js-close-exit').on('click', function(){
         setCookie('exitPopup', true, 30);
-        sessionStorage.setItem('exitPopup', true);
+        if(!is_exit){
+            is_exit = true;
+        }
     })
     
   
@@ -51,9 +48,9 @@ window.addEventListener('load', function () {
         d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
         var expires = "expires="+d.toUTCString();
         document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-      }
+    }
       
-      function getCookie(cname) {
+    function getCookie(cname) {
         var name = cname + "=";
         var ca = document.cookie.split(';');
         for(var i = 0; i < ca.length; i++) {
@@ -66,9 +63,9 @@ window.addEventListener('load', function () {
           }
         }
         return "";
-      }
+    }
       
-      function checkCookie(name) {
+    function checkCookie(name) {
         return getCookie(name);
-      }
+    }
 });

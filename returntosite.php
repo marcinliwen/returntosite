@@ -59,7 +59,7 @@ class Returntosite extends Module
      */
     public function install()
     {
-        Configuration::updateValue('RETURNTOSITE_LIVE_MODE', false);
+       
         Configuration::updateValue('EP_DESCRIPTION', '<p>przykładowa treść</p>', true);
         Configuration::updateValue('EP_COLOR', '#ff3f64');
 
@@ -68,13 +68,12 @@ class Returntosite extends Module
         return parent::install() &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader') &&
-            $this->registerHook('displayFooterProduct') &&
-            $this->registerHook('displayLeftColumn');
+            $this->registerHook('displayFooterBefore');
+            //$this->registerHook('displayLeftColumn');
     }
 
     public function uninstall()
     {
-        Configuration::deleteByName('RETURNTOSITE_LIVE_MODE');
         Configuration::deleteByName('EP_DESCRIPTION');
         Configuration::deleteByName('EP_COLOR');
 
@@ -93,11 +92,14 @@ class Returntosite extends Module
          * If values have been submitted in the form, process.
          */
         if (((bool)Tools::isSubmit('submitReturntositeModule')) == true) {
-            $this->postProcess();
+            if ($this->_postValidation()) {
+                $this->postProcess();
+            }
+            
         }
 
         $this->context->smarty->assign('module_dir', $this->_path);
-
+        
         $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
 
         return $output.$this->renderForm();
@@ -142,8 +144,8 @@ class Returntosite extends Module
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
         );
-       // $helper->fields_value =  $this->getConfigFormValues();
-    
+       
+       
         return $helper->generateForm(array($this->getConfigForm()));
     }
 
@@ -155,10 +157,27 @@ class Returntosite extends Module
         
         $products = Product::getProducts(1, 0, 0, 'id_product', 'ASC', false, true);
       
+        
         foreach($products as $product){
             $query['id'] = $product['id_product'];
             $query['name'] = $product['name'];
             $product_query[] = $query;
+            $query = [];
+        }
+       
+        $allCategory = Category::getAllCategoriesName(
+            null,
+            null,
+            true,
+            null,
+            true,
+            '',
+            'ORDER BY c.nleft, c.position'
+        );
+        foreach($allCategory as $category){
+            $query['id_category'] = $category['id_category'];
+            $query['name'] = $category['name'];
+            $category_query[] = $query;
             $query = [];
         }
        
@@ -201,22 +220,23 @@ class Returntosite extends Module
                         'autoload_rte' => true,
                         'desc' => $this->l('Wybierz datę, do której popup będzie widoczny na stronie.'),
                     ),
-                    array(
-                        'type'  => 'categories',
+                     array(
+                        'type' => 'select',
+                        'cols' => 20,
                         'label' => $this->l('Kategoria:'),
-                        'desc'    => $this->l('Wybierz kategorię, na której pojawi się popup'),  
-                        'name'  => 'EP_CATEGORY[]',
-                        'tree'  => array(
-                             'id' => 'EP_CATEGORY',
-                             'selected_categories' => array((int)Configuration::get('EP_CATEGORY')),
-                         )
-                     ),
+                        'name' => 'EP_CATEGORY_2',
+                        'options' => array(
+                            'query' => $category_query,
+                            'id' => 'id_category',
+                            'name' => 'name',
+                        ),
+                        'desc' => $this->l('Wybierz produkty z listy.'),
+                    ),
                     array(
                         'type' => 'select',
                         'cols' => 20,
                         'label' => $this->l('Produkt:'),
                         'name' => 'EP_SELECTED_PRODUCT',
-                        'class' => 'fixed-width-xxl',
                         'options' => array(
                             'query' => $product_query,
                             'id' => 'id',
@@ -263,7 +283,8 @@ class Returntosite extends Module
             'EP_ACTIVE_FROM'=> Configuration::get('EP_ACTIVE_FROM'),
             'EP_ACTIVE_TO' => Configuration::get('EP_ACTIVE_TO'),
             'EP_CATEGORY'=> Configuration::get('EP_CATEGORY'),
-            'EP_SELECTED_PRODUCTS'=> Configuration::get('EP_SELECTED_PRODUCTS[]'),
+            'EP_CATEGORY_2'=> Configuration::get('EP_CATEGORY_2'),
+            'EP_SELECTED_PRODUCT' => Configuration::get('EP_SELECTED_PRODUCT'),
             'EP_ACTIVE'=> Configuration::get('EP_ACTIVE'),
         );
     }
@@ -273,20 +294,35 @@ class Returntosite extends Module
      */
     protected function postProcess()
     {
-        $form_values = $this->getConfigFormValues();
-
-        foreach (array_keys($form_values) as $key) {
-           
-          if($key == 'EP_DESCRIPTION'){
-            Configuration::updateValue($key, Tools::getValue($key), true);
-          }else{
-            Configuration::updateValue($key, Tools::getValue($key));
-          }
-               
-          
-        }
+        Configuration::updateValue('EP_DESCRIPTION', Tools::getValue('EP_DESCRIPTION'), true);
+        Configuration::updateValue('EP_COLOR', Tools::getValue('EP_COLOR'));
+        Configuration::updateValue('EP_ACTIVE_FROM', Tools::getValue('EP_ACTIVE_FROM'));
+        Configuration::updateValue('EP_ACTIVE_TO', Tools::getValue('EP_ACTIVE_TO'));
+        Configuration::updateValue('EP_CATEGORY', Tools::getValue('EP_CATEGORY'));
+        Configuration::updateValue('EP_CATEGORY_2', Tools::getValue('EP_CATEGORY_2'));
+        Configuration::updateValue('EP_SELECTED_PRODUCT', Tools::getValue('EP_SELECTED_PRODUCT'));
+        Configuration::updateValue('EP_ACTIVE', Tools::getValue('EP_ACTIVE'));
+                
     }
 
+    protected function _postValidation()
+    {
+        $errors = array();
+
+        if(!Validate::isDate(Tools::getValue('EP_ACTIVE_FROM')) && !Validate::isDate(Tools::getValue('EP_ACTIVE_TO')) || (Tools::getValue('EP_ACTIVE_FROM')) >= (Tools::getValue('EP_ACTIVE_TO'))  ){
+            $errors[] = $this->getTranslator()->trans('Data "Aktywny do" musi być większa od daty "Aktywny od".', array(), 'Modules.Imageslider.Admin');
+        }
+        if (count($errors)) {
+            $this->context->smarty->assign('errors',implode('<br />', $errors) );
+            return false;
+        }
+
+        /* Returns if validation is ok */
+
+        return true;
+    }
+
+    
     /**
     * Add the CSS & JavaScript files you want to be loaded in the BO.
     */
@@ -305,67 +341,144 @@ class Returntosite extends Module
     {
         $this->context->controller->addJS($this->_path.'/views/js/front.js');
         $this->context->controller->addCSS($this->_path.'/views/css/front.css');
-        $this->context->controller->addCSS('https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css');
+       
+        $this->context->controller->registerJavascript('fontawasome', 'https://kit.fontawesome.com/90be9a4e01.js',['server' => 'remote', 'position' => 'bottom', 'priority' => 150, 'crossorigin' => 'anonymous']);
     }
 
-    public function hookDisplayFooterProduct()
-    {
-        /* Place your code here. */
-    }
-
-    public function hookDisplayLeftColumn()
+    public function hookDisplayFooterBefore()
     {
         function getContrastColor($hexColor) 
         {
+            // hexColor RGB
+            $R1 = hexdec(substr($hexColor, 1, 2));
+            $G1 = hexdec(substr($hexColor, 3, 2));
+            $B1 = hexdec(substr($hexColor, 5, 2));
 
-                // hexColor RGB
-                $R1 = hexdec(substr($hexColor, 1, 2));
-                $G1 = hexdec(substr($hexColor, 3, 2));
-                $B1 = hexdec(substr($hexColor, 5, 2));
+            // Black RGB
+            $blackColor = "#000000";
+            $R2BlackColor = hexdec(substr($blackColor, 1, 2));
+            $G2BlackColor = hexdec(substr($blackColor, 3, 2));
+            $B2BlackColor = hexdec(substr($blackColor, 5, 2));
 
-                // Black RGB
-                $blackColor = "#000000";
-                $R2BlackColor = hexdec(substr($blackColor, 1, 2));
-                $G2BlackColor = hexdec(substr($blackColor, 3, 2));
-                $B2BlackColor = hexdec(substr($blackColor, 5, 2));
+            // Calc contrast ratio
+            $L1 = 0.2126 * pow($R1 / 255, 2.2) +
+                0.7152 * pow($G1 / 255, 2.2) +
+                0.0722 * pow($B1 / 255, 2.2);
 
-                // Calc contrast ratio
-                $L1 = 0.2126 * pow($R1 / 255, 2.2) +
-                    0.7152 * pow($G1 / 255, 2.2) +
-                    0.0722 * pow($B1 / 255, 2.2);
+            $L2 = 0.2126 * pow($R2BlackColor / 255, 2.2) +
+                0.7152 * pow($G2BlackColor / 255, 2.2) +
+                0.0722 * pow($B2BlackColor / 255, 2.2);
 
-                $L2 = 0.2126 * pow($R2BlackColor / 255, 2.2) +
-                    0.7152 * pow($G2BlackColor / 255, 2.2) +
-                    0.0722 * pow($B2BlackColor / 255, 2.2);
+            $contrastRatio = 0;
+            if ($L1 > $L2) {
+                $contrastRatio = (int)(($L1 + 0.05) / ($L2 + 0.05));
+            } else {
+                $contrastRatio = (int)(($L2 + 0.05) / ($L1 + 0.05));
+            }
 
-                $contrastRatio = 0;
-                if ($L1 > $L2) {
-                    $contrastRatio = (int)(($L1 + 0.05) / ($L2 + 0.05));
-                } else {
-                    $contrastRatio = (int)(($L2 + 0.05) / ($L1 + 0.05));
-                }
-
-                // If contrast is more than 5, return black color
-                if ($contrastRatio > 5) {
-                    return '#000000';
-                } else { 
-                    // if not, return white color.
-                    return '#FFFFFF';
-                }
+            // If contrast is more than 5, return black color
+            if ($contrastRatio > 5) {
+                return '#000000';
+            } else { 
+                // if not, return white color.
+                return '#FFFFFF';
+            }
         }
 
         $text_color = getContrastColor(Configuration::get('EP_COLOR'));
 
-        $context = Context::getContext();
-        $context->cookie->__set($exitp_closed,$result);
+        function isInDateRange(){
+            $now = new DateTime(date("Y-m-d H:i:s"));
+            $from = new DateTime(Configuration::get('EP_ACTIVE_FROM'));
+            $to = new DateTime(Configuration::get('EP_ACTIVE_TO'));
+        
+        return($now >= $from && $now <= $to);           
+        }
+
+        if(isInDateRange() && Configuration::get('EP_ACTIVE')){
+                $display_popup = true;
+        }else{
+                $display_popup = false;
+        }
+        
         /* Place your code here. */
         $this->smarty->assign([
             'ep_text' => Configuration::get('EP_DESCRIPTION'),
-            'ep_category_id' => Configuration::get('EP_CATEGORY'),
             'ep_main_color' =>Configuration::get('EP_COLOR'),
             'ep_text_color' => $text_color,
+            'ep_category_id' => Configuration::get('EP_CATEGORY_2'),
+            'ep_product_id' => Configuration::get('EP_SELECTED_PRODUCT'),
+            'ep_active' => $display_popup,
         ]);
 
         return $this->fetch('module:returntosite/views/templates/hook/exitpopup.tpl');
     }
+    
+
+   /* public function hookDisplayLeftColumn()
+    {
+        function getContrastColor($hexColor) 
+        {
+            // hexColor RGB
+            $R1 = hexdec(substr($hexColor, 1, 2));
+            $G1 = hexdec(substr($hexColor, 3, 2));
+            $B1 = hexdec(substr($hexColor, 5, 2));
+
+            // Black RGB
+            $blackColor = "#000000";
+            $R2BlackColor = hexdec(substr($blackColor, 1, 2));
+            $G2BlackColor = hexdec(substr($blackColor, 3, 2));
+            $B2BlackColor = hexdec(substr($blackColor, 5, 2));
+
+            // Calc contrast ratio
+            $L1 = 0.2126 * pow($R1 / 255, 2.2) +
+                0.7152 * pow($G1 / 255, 2.2) +
+                0.0722 * pow($B1 / 255, 2.2);
+
+            $L2 = 0.2126 * pow($R2BlackColor / 255, 2.2) +
+                0.7152 * pow($G2BlackColor / 255, 2.2) +
+                0.0722 * pow($B2BlackColor / 255, 2.2);
+
+            $contrastRatio = 0;
+            if ($L1 > $L2) {
+                $contrastRatio = (int)(($L1 + 0.05) / ($L2 + 0.05));
+            } else {
+                $contrastRatio = (int)(($L2 + 0.05) / ($L1 + 0.05));
+            }
+
+            // If contrast is more than 5, return black color
+            if ($contrastRatio > 5) {
+                return '#000000';
+            } else { 
+                // if not, return white color.
+                return '#FFFFFF';
+            }
+        }
+
+        $text_color = getContrastColor(Configuration::get('EP_COLOR'));
+
+        function isInDateRange(){
+            $now = new DateTime(date("Y-m-d H:i:s"));
+            $from = new DateTime(Configuration::get('EP_ACTIVE_FROM'));
+            $to = new DateTime(Configuration::get('EP_ACTIVE_TO'));
+        
+        return($now >= $from && $now <= $to);           
+        }
+
+        if(isInDateRange() && Configuration::get('EP_ACTIVE')){
+                $display_popup = true;
+        }else{
+                $display_popup = false;
+        }
+        
+        $this->smarty->assign([
+            'ep_text' => Configuration::get('EP_DESCRIPTION'),
+            'ep_main_color' =>Configuration::get('EP_COLOR'),
+            'ep_text_color' => $text_color,
+            'ep_category_id' => Configuration::get('EP_CATEGORY_2'),
+            'ep_product_id'=> Configuration::get('EP_SELECTED_PRODUCT'),
+        ]);
+
+        return $this->fetch('module:returntosite/views/templates/hook/exitpopup.tpl');
+    }*/
 }

@@ -31,5 +31,8 @@
 	<p>
 		{l s='Zaplanuj kiedy ma się pojawiać i zwiększ sprzedaz' mod='returntosite'}
 	</p>
+	{if $errors}
+	<p class="alert alert-danger">{$errors}</p>
+	{/if}
 </div>
 
